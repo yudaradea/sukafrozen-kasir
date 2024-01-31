@@ -5,6 +5,7 @@ namespace Modules\Sale\DataTables;
 use Modules\Sale\Entities\Sale;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
+
 use Yajra\DataTables\Html\Editor\Editor;
 use Yajra\DataTables\Html\Editor\Fields;
 use Yajra\DataTables\Services\DataTable;
@@ -13,17 +14,31 @@ class SalesDataTable extends DataTable
 {
 
     public function dataTable($query)
+
     {
         return datatables()
             ->eloquent($query)
+            ->addIndexColumn()
+            ->addColumn('no', function ($data) {
+
+                $no = 1;
+                return ($no + 1);
+            })
+
             ->addColumn('total_amount', function ($data) {
                 return format_currency($data->total_amount);
             })
             ->addColumn('paid_amount', function ($data) {
                 return format_currency($data->paid_amount);
             })
-            ->addColumn('change', function ($data) {
-                return format_currency($data->due_amount);
+            ->addColumn('Penjual', function ($data) {
+                $dataDetails = $data->saleDetails;
+                $options = '';
+                foreach ($dataDetails as $dataDetail) {
+                    $productName = $dataDetail->product_name;
+                    $options .= '<p>' . $productName . '</p>';
+                }
+                return ($options);
             })
             ->addColumn('status', function ($data) {
                 return view('sale::partials.status', compact('data'));
@@ -33,13 +48,16 @@ class SalesDataTable extends DataTable
             })
             ->addColumn('action', function ($data) {
                 return view('sale::partials.actions', compact('data'));
-            });
+            })
+            ->rawColumns(['Penjual']);
     }
 
     public function query(Sale $model)
     {
-        return $model->newQuery();
+        return $model->with(['saleDetails'])->newQuery();
     }
+
+
 
     public function html()
     {
@@ -66,9 +84,8 @@ class SalesDataTable extends DataTable
     protected function getColumns()
     {
         return [
-            Column::make('reference')
+            Column::make('no')
                 ->className('text-center align-middle'),
-
             Column::make('customer_name')
                 ->title('Customer')
                 ->className('text-center align-middle'),
@@ -82,7 +99,7 @@ class SalesDataTable extends DataTable
             Column::computed('paid_amount')
                 ->className('text-center align-middle'),
 
-            Column::computed('change')
+            Column::computed('Penjual')
                 ->className('text-center align-middle'),
 
             Column::computed('payment_status')
